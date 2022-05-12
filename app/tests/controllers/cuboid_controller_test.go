@@ -156,30 +156,79 @@ var _ = Describe("Cuboid Controller", func() {
 	// IMPLEMENT the tests BELOW
 
 	Describe("Update", func() {
-		PIt("Response HTTP status code 200")
+		var cuboidID uint
+		cuboidPayload := map[string]interface{}{}
 
-		PIt("Returns the updated cuboid")
-
-		Context("When cuboid does not fit into the bag", func() {
-			PIt("Response HTTP status code 400")
-
-			PIt("Response a JSON with error message 'Insufficient capacity in bag'")
+		BeforeEach(func() {
+			cuboidID = bag.Cuboids[0].ID
+			cuboidPayload = map[string]interface{}{
+				"width":  1,
+				"height": 1,
+				"depth":  1,
+				"bagId":  bag.ID,
+			}
 		})
 
+		JustBeforeEach(func() {
+			body, _ := testutils.SerializeToString(cuboidPayload)
+			w = testutils.MockRequest(http.MethodPut, "/cuboids/"+fmt.Sprintf("%v", cuboidID), &body)
+		})
+
+		It("Response HTTP status code 200", func() {
+			Expect(w.Code).To(Equal(200))
+		})
+
+		It("Returns the updated cuboid", func() {
+			m, _ := testutils.Deserialize(w.Body.String())
+			Expect(m["width"]).ToNot(BeNil())
+			Expect(m["height"]).ToNot(BeNil())
+			Expect(m["depth"]).ToNot(BeNil())
+			Expect(m["volume"]).ToNot(BeNil())
+			Expect(m["bagId"]).To(BeEquivalentTo(bag.ID))
+		})
+
+		// Context("When cuboid does not fit into the bag", func() {
+		// 	Expect(w.Code).To(Equal(400))
+		// 	m, _ := testutils.Deserialize(w.Body.String())
+		// 	Expect(m["error"]).To(Equal("Insufficient capacity in bag"))
+		// })
+
 		Context("When cuboid is not present", func() {
-			PIt("Response HTTP status code 404")
+			BeforeEach(func() {
+				cuboidID = 100
+			})
+
+			It("Cuboid is not present", func() {
+				Expect(w.Code).To(Equal(404))
+			})
 		})
 	})
 
 	Describe("Delete", func() {
-		Context("When the cuboid is present", func() {
-			PIt("Response HTTP status code 200")
+		var cuboidID uint
 
-			PIt("Remove the cuboid")
+		BeforeEach(func() {
+			cuboidID = bag.Cuboids[0].ID
+		})
+
+		JustBeforeEach(func() {
+			w = testutils.MockRequest(http.MethodDelete, "/cuboids/"+fmt.Sprintf("%v", cuboidID), nil)
+		})
+
+		Context("When the cuboid is present", func() {
+			It("Response HTTP status code 200", func() {
+				Expect(w.Code).To(Equal(200))
+			})
 		})
 
 		Context("When cuboid is not present", func() {
-			PIt("Response HTTP status code 404")
+			BeforeEach(func() {
+				cuboidID = 5599
+			})
+
+			It("Cuboid is not present", func() {
+				Expect(w.Code).To(Equal(404))
+			})
 		})
 	})
 })
